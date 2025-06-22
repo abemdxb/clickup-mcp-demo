@@ -1,31 +1,27 @@
-import asyncio, json, os, sys, subprocess, textwrap
-from mcp import ClientSession
+import asyncio, json, sys
+from mcp import ClientSession, StdioServerParameters          # <-- fixed
 from mcp.client.stdio import stdio_client
-from mcp.shared.session import StdioServerParameters
 
 async def main():
-    # --- exact Python inside the venv, plus -u for unbuffered IO ----
-    python_exe = sys.executable            # e.g. C:\…\clickup-mcp-demo\.venv\Scripts\python.exe
     srv = StdioServerParameters(
-        command=python_exe,
-        args=["-u", "server/main.py"],     # <- -u fixes buffering
-        log_stderr=True,                   # show server crashes in our console
+        command=sys.executable,           # the venv’s python
+        args=["-u", "server/main.py"],    # -u = unbuffered I/O
+        log_stderr=True,                  # show server crashes
     )
 
     async with stdio_client(srv) as (r, w):
         async with ClientSession(r, w) as s:
             await s.initialize()
 
-            # --------------- call your ClickUp tool ----------------
-            result = await s.call_tool(
+            # create a task
+            res = await s.call_tool(
                 "create_task",
                 {"name": "Demo via client", "description": "hello MCP"}
             )
-            print("\nCreate-task response:\n", json.dumps(result, indent=2))
+            print("Created:", json.dumps(res, indent=2))
 
-            # ----- tidy up so you don’t leave a stray task ----------
-            task_id = result["task_id"]
-            await s.call_tool("delete_task", {"task_id": task_id})
-            print("\nDeleted task", task_id)
+            # delete it again so ClickUp stays tidy
+            await s.call_tool("delete_task", {"task_id": res["task_id"]})
+            print("Deleted", res["task_id"])
 
 asyncio.run(main())
