@@ -47,4 +47,5 @@ def delete_task(task_id: str) -> dict:
 # --------------------------  MAIN  --------------------------
 
 if __name__ == "__main__":
+    print("🚀 FastMCP ClickUp server ready (stdio mode)…")
     mcp.run()                                # FastMCP handles the event loop
